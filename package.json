@@ -1,0 +1,27 @@
+{
+  "name": "data-trail",
+  "version": "1.0.0",
+  "description": "Um siples serviço de processamento de dados em .csv",
+  "main": "index.js",
+  "scripts": {
+    "dev": "tsx watch ./src/server.ts",
+    "start": "",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Gabriel Morais",
+  "license": "ISC",
+  "dependencies": {
+    "@types/node": "^20.12.7",
+    "csv-parse": "^5.5.5",
+    "date-fns": "^3.6.0",
+    "fastify": "^4.26.2",
+    "tsx": "^4.7.2",
+    "typescript": "^5.4.5",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@tsconfig/node21": "^21.0.3",
+    "@types/csv-parse": "^1.2.2"
+  }
+}
