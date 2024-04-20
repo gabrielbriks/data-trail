@@ -4,92 +4,9 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import { createReadStream, createWriteStream } from "fs";
 import path from "path";
 import { Transform, Writable } from "stream";
+import { ColunsType } from "../../types/coluns-type";
 
-interface ColunsType {
-  Trip_ID: "";
-  Taxi_ID: "";
-  Trip_Start_Timestamp: "";
-  Trip_End_Timestamp: "";
-  Trip_Seconds: "";
-  Trip_Miles: "";
-  Fare: "";
-  Trip_Total: "";
-  Payment_Type: "";
-  Company: "";
-}
-
-export async function processNewFile_v1(
-  req: FastifyRequest,
-  reply: FastifyReply
-) {
-  try {
-    const csvFilePath = path.resolve(
-      __dirname,
-      "../data-files/TaxiTrips2_2024.csv"
-    );
-
-    const readableStream = createReadStream(csvFilePath);
-    // return csvFilePath;
-    const transformStreamToObject = parse({
-      delimiter: ",",
-      // columns: [
-      //   "Trip_ID",
-      //   "Taxi_ID",
-      //   "Trip Start_Timestamp",
-      //   "Trip_End_Timestamp",
-      //   "Trip_Seconds",
-      //   "Trip_Miles",
-      //   "Pickup_Censu_Tract",
-      //   "Dropoff_Census_Tract",
-      //   "Pickup_Community_Area",
-      //   "Dropoff_Community_Area",
-      //   "Fare",
-      //   "Tips",
-      //   "Tolls",
-      //   "Extras",
-      //   "Trip_Total",
-      //   "Payment_Type",
-      //   "Company",
-      //   "Pickup_Centroid_Latitude",
-      //   "Pickup_Centroid_Longitude",
-      //   "Pickup_Centroid_Location",
-      //   "Dropoff_Centroid_Latitude",
-      //   "Dropoff_Centroid_Longitude",
-      //   "Dropoff_Centroid_Location",
-      // ],
-    });
-
-    const transformStreatToString = new Transform({
-      objectMode: true,
-      transform(chunk, econding, callback) {
-        callback(null, JSON.stringify(chunk));
-      },
-    });
-
-    const writableStream = new Writable({
-      write(chunk, econding, callback) {
-        const dataString = (chunk as Buffer).toString();
-        const data = JSON.parse(dataString);
-        console.log(data);
-        // callback();
-      },
-    });
-
-    console.log("Initial", Date());
-    readableStream
-      .pipe(transformStreamToObject)
-      .pipe(transformStreatToString)
-      .pipe(writableStream)
-      .on("close", () => console.log("Finish", Date()));
-
-    reply.send({ message: "The file was processed successfully" });
-  } catch (error) {
-    console.log(error);
-    return reply.send(JSON.stringify(error));
-  }
-}
-
-export async function processNewFile_v2(
+export async function processNewFileController(
   req: FastifyRequest,
   reply: FastifyReply
 ) {
@@ -101,12 +18,13 @@ export async function processNewFile_v2(
   try {
     const csvFilePath = path.resolve(
       __dirname,
-      "../data-files/TaxiTrips_2024.csv"
+      "../../../data-files/TaxiTrips2_2024.csv"
     );
 
+    const today = new Date();
     const outputFileJson = path.resolve(
       __dirname,
-      `../data-files/output_${formatISO(Date())}.json`
+      `../../../data-files/output_${formatISO(today)}.json`
     );
 
     startTime = new Date();
