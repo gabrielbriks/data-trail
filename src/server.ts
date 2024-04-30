@@ -6,4 +6,4 @@ app
     host: "0.0.0.0",
   })
   .then(() => console.log("HTTP Server Running"))
-  .catch(() => console.log("ERROR: Not Server Running"));
+  .catch((e) => console.log("ERROR: Not Server Running", e));

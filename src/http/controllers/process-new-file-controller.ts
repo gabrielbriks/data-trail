@@ -1,10 +1,12 @@
 import { parse } from "csv-parse";
-import { formatISO } from "date-fns";
+import { formatDistance, formatISO } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { FastifyReply, FastifyRequest } from "fastify";
 import { createReadStream, createWriteStream } from "fs";
 import path from "path";
 import { Transform, Writable } from "stream";
-import { ColunsType } from "../../types/coluns-type";
+import { saveFileData } from "../../business/save-file";
+import { saveListRecords } from "../../business/save-records";
 
 export async function processNewFileController(
   req: FastifyRequest,
@@ -18,13 +20,14 @@ export async function processNewFileController(
   try {
     const csvFilePath = path.resolve(
       __dirname,
-      "../../../data-files/TaxiTrips2_2024.csv"
+      "../../../data-files/TaxiTrips_2024.csv"
     );
 
     const today = new Date();
+    const nameOutputFileJson = `output_${formatISO(today)}.json`;
     const outputFileJson = path.resolve(
       __dirname,
-      `../../../data-files/output_${formatISO(today)}.json`
+      `../../../data-files/${nameOutputFileJson}`
     );
 
     startTime = new Date();
@@ -33,14 +36,14 @@ export async function processNewFileController(
     const readableStream = createReadStream(csvFilePath);
     const newFileJsonWritableStream = createWriteStream(outputFileJson, {});
 
-    newFileJsonWritableStream.write("[\n");
-
     const transformStreamToObject = parse({
       delimiter: ",",
       columns: true,
       groupColumnsByName: true,
       autoParseDate: true,
     });
+
+    const recordsForSave: any[] = [];
 
     const transformStreamToString = new Transform({
       objectMode: true,
@@ -52,26 +55,43 @@ export async function processNewFileController(
     });
 
     const writableStream = new Writable({
-      write(chunk, econding, callback) {
-        const data: ColunsType = JSON.parse(chunk);
-        const output = JSON.stringify(
-          {
-            Trip_ID: data.Trip_ID,
-            Taxi_ID: data.Taxi_ID,
-            Trip_Start_Timestamp: data.Trip_Start_Timestamp,
-            Trip_End_Timestamp: data.Trip_End_Timestamp,
-            Trip_Miles: data.Trip_Miles,
-            Trip_Seconds: data.Trip_Seconds,
-            Fare: data.Fare,
-            Payment_Type: data.Payment_Type,
-            Trip_Total: data.Trip_Total,
-            Company: data.Company,
-          },
-          null,
-          2
-        ).concat(",");
+      async write(chunk, econding, callback) {
+        try {
+          const data = JSON.parse(chunk);
+          const output = JSON.stringify(
+            {
+              trip_id: data.Trip_ID,
+              Taxi_ID: data.Taxi_ID,
+              Trip_Start_Timestamp: data.Trip_Start_Timestamp,
+              Trip_End_Timestamp: data.Trip_End_Timestamp,
+              Trip_Miles: data.Trip_Miles,
+              Trip_Seconds: data.Trip_Seconds,
+              Fare: data.Fare,
+              Payment_Type: data.Payment_Type,
+              Trip_Total: data.Trip_Total,
+              Company: data.Company,
+            },
+            null,
+            2
+          );
 
-        newFileJsonWritableStream.write(output);
+          recordsForSave.push(JSON.parse(output));
+
+          newFileJsonWritableStream.write(output);
+
+          !newFileJsonWritableStream.writableFinished &&
+            newFileJsonWritableStream.write(",\n");
+
+          callback(null);
+        } catch (error: any) {
+          callback(error);
+        }
+      },
+      final(this, callback) {
+        //Close array in json
+        newFileJsonWritableStream.write("\n]");
+
+        newFileJsonWritableStream.end();
         callback(null);
       },
     });
@@ -81,9 +101,36 @@ export async function processNewFileController(
       .pipe(transformStreamToString)
       .pipe(writableStream);
 
+    readableStream.on("ready", async () => {
+      //open array in json
+      newFileJsonWritableStream.write("[\n");
+    });
+
     readableStream.on("close", async () => {
-      await newFileJsonWritableStream.write("\n]");
-      await newFileJsonWritableStream.end();
+      //TODO: Remover
+      console.log(
+        `${Date()} - Salvando registros no banco... Tempo processamento arquivos: `,
+        `${formatDistance(startTime, Date(), { locale: ptBR })}`
+      );
+
+      // Inserir os registros no banco de dados em lotes
+      const batchSize =
+        recordsForSave.length > 5000
+          ? 1000
+          : recordsForSave.length < 1000
+          ? recordsForSave.length
+          : 500;
+
+      const fileResultId = await saveFileData(nameOutputFileJson);
+
+      if (!fileResultId) {
+        throw new Error("Registro não existe em [Files]! ");
+      }
+
+      for (let i = 0; i < recordsForSave.length; i += batchSize) {
+        const batch = recordsForSave.slice(i, i + batchSize);
+        await saveListRecords(batch, fileResultId);
+      }
 
       endTime = new Date();
       duration = Number(endTime.getTime() - startTime.getTime());

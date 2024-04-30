@@ -1,5 +1,5 @@
 export interface ColunsType {
-  Trip_ID: "";
+  trip_id: "";
   Taxi_ID: "";
   Trip_Start_Timestamp: "";
   Trip_End_Timestamp: "";
