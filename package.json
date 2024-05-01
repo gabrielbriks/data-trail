@@ -4,8 +4,8 @@
   "description": "Um siples serviço de processamento de dados em .csv",
   "main": "index.js",
   "scripts": {
-    "dev": "tsx watch ./src/server.ts",
     "start": "",
+    "dev": "tsx watch ./src/server.ts",
     "startup": "tsx ./src/setup.ts"
   },
   "keywords": [],
@@ -15,6 +15,7 @@
     "@types/node": "^20.12.7",
     "csv-parse": "^5.5.5",
     "date-fns": "^3.6.0",
+    "dotenv": "^16.4.5",
     "fastify": "^4.26.2",
     "postgres": "^3.4.4",
     "tsx": "^4.7.2",

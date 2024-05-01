@@ -18,10 +18,14 @@ export async function processNewFileController(
   let streamClosed = false;
 
   try {
-    const csvFilePath = path.resolve(
-      __dirname,
-      "../../../data-files/TaxiTrips_2024.csv"
-    );
+    console.log;
+    let filePath = process.env.DIR_FILE_CSV;
+
+    if (!filePath) {
+      throw new Error("File path not found!");
+    }
+
+    const csvFilePath = path.resolve(__dirname, filePath);
 
     const today = new Date();
     const nameOutputFileJson = `output_${formatISO(today)}.json`;
@@ -161,6 +165,6 @@ export async function processNewFileController(
     });
   } catch (error) {
     console.log(error);
-    return reply.send(JSON.stringify(error));
+    return reply.status(400).send(error);
   }
 }
