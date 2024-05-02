@@ -35,8 +35,6 @@ export async function saveRecord(data: ColunsType, idFile: string) {
         )
       `;
 
-    console.log("SaveRecords_Result", result);
-
     return result;
   } catch (error) {
     throw new Error(JSON.stringify(error));
@@ -103,8 +101,6 @@ export async function saveListRecords(
 
     const result: Array<any> = await sql/*sql*/ `
     INSERT INTO records ${sql(records)} RETURNING id`;
-
-    console.log("SaveRecords_Result \n", result.length);
 
     return result;
   } catch (error) {

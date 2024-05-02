@@ -1,6 +1,5 @@
 import { parse } from "csv-parse";
-import { formatDistance, formatISO } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { formatISO } from "date-fns";
 import { FastifyReply, FastifyRequest } from "fastify";
 import { createReadStream, createWriteStream } from "fs";
 import path from "path";
@@ -14,13 +13,12 @@ export async function processNewFileController(
 ) {
   let startTime: Date;
   let endTime: Date;
+  let durationProccesFile: number | null = null;
   let duration: number | null = null;
   let streamClosed = false;
+  let filePath = process.env.DIR_FILE_CSV;
 
   try {
-    console.log;
-    let filePath = process.env.DIR_FILE_CSV;
-
     if (!filePath) {
       throw new Error("File path not found!");
     }
@@ -111,10 +109,10 @@ export async function processNewFileController(
     });
 
     readableStream.on("close", async () => {
-      //TODO: Remover
+      durationProccesFile = new Date().getTime() - startTime.getTime();
       console.log(
-        `${Date()} - Salvando registros no banco... Tempo processamento arquivos: `,
-        `${formatDistance(startTime, Date(), { locale: ptBR })}`
+        `Salvando registros no banco... Tempo processamento arquivos: `,
+        `${durationProccesFile} ms`
       );
 
       // Inserir os registros no banco de dados em lotes
@@ -159,9 +157,10 @@ export async function processNewFileController(
     await waitForStreamClose();
 
     reply.send({
-      message: `The file was processed successfully. \n Total Time of Processing: ${
-        Number(duration) || undefined
-      } ms `,
+      message: `
+        The file was processed successfully. 
+        Time Processing file: ${durationProccesFile || undefined} ms
+        Total time process: ${Number(duration) || undefined} ms  `,
     });
   } catch (error) {
     console.log(error);
